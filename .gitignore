@@ -1,0 +1,18 @@
+.idea
+*__pycache__*/
+# /home/c11tch/workspace/PycharmProjects/JC_Demo/
+ocr_module/EAST/test_data/
+ocr_module/EAST/run/*
+ocr_module/EAST/pretrained_model/*
+ocr_module/chinese_ocr/models/*
+face_module/pre_train_models/*
+face_module/sir_db/
+face_module/run/
+image_vec/pretrained/*
+image_vec/data/
+nlp_module/ner/example/
+obj_dectect_module/*.h5
+TestElasticSearch/
+venv/
+TensorBoard/
+files_need_to_download

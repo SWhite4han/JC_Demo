@@ -1,0 +1,17 @@
+--- pip ---
+
+pip3 install Pillow scipy opencv-contrib-python matplotlib h5py keras requests tornado jieba python-Levenshtein shapely, hanziconv
+pip3 install -v elasticsearch==6.3.1 numpy==1.14.2 tensorflow-gpu==1.4 scikit-image==0.13.1
+
+--- torch ---
+pip3 install https://download.pytorch.org/whl/cu80/torch-1.0.0-cp35-cp35m-linux_x86_64.whl
+pip3 install torchvision
+
+--- yolo ---
+pip3 install https://github.com/OlafenwaMoses/ImageAI/releases/download/2.0.2/imageai-2.0.2-py3-none-any.whl
+
+--- apt-get ---
+# for cv2
+apt-get install libglib2.0-0 libsm6 libxext6 libxrender1
+
+------------------------
