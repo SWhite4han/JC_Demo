@@ -1,12 +1,9 @@
---- pip ---
-Pillow
-elasticsearch 6.3.N
-numpy
-tensorflow-gpu 1.4
-scipy
-cv2
-opencv-contrib-python
-matplotlib
-h5py
-keras
-pip3 install https://github.com/OlafenwaMoses/ImageAI/releases/download/2.0.2/imageai-2.0.2-py3-none-any.whl
+JC DEMO
+
+run process.py to test unit component
+
+run search_api.py to use component combine with ELK by post json
+(call by image path)
+
+run api_server.py to use component by post json
+(call by image in type base64)

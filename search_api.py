@@ -34,11 +34,11 @@ def submit(url, json=None):
 class MainHandler(tornado.web.RequestHandler):
 
     def initialize(self, args_dict):
-        self.OCD = args_dict['OCD']
-        self.OCR = args_dict['OCR']
+        # self.OCD = args_dict['OCD']
+        # self.OCR = args_dict['OCR']
         # self.yolo = args_dict['yolo']
         # self.facenet = args_dict['facenet']
-        # self.imagenet = args_dict['imagenet']
+        self.imagenet = args_dict['imagenet']
         # self.ner = args_dict['ner']
         self.es = args_dict['es_obj']
         self.index = args_dict['index']
@@ -127,10 +127,11 @@ class MainHandler(tornado.web.RequestHandler):
 
         if task == '0':
             # image = [image]
-            face_vectors, exist_paths = self.get_face_features(paths)
+            face_vectors, exist_paths, locations = self.get_face_features(paths)
 
             if face_vectors:
                 ob = {'imgVec': face_vectors[0].tolist(), 'response': 'good'}
+                # ob2 = {'imgVec': [f.tolist() for f in face_vectors], 'response': 'good'}
                 if self.es:
                     result = self.es.query_face_result(face_vectors[0].tolist(), target_index=self.index)
                     self.write(json.dumps(result))
@@ -159,22 +160,22 @@ class MainHandler(tornado.web.RequestHandler):
             # ---------------------------------
             # Upload Face
             # ---------------------------------
-            face_vectors, exist_paths = self.get_face_features(paths)
-            if len(face_vectors) > 0:
-                tmp = ''
-                count_same_img = 1
-                for i in range(len(face_vectors)):
-                    source_path = exist_paths[i]
-                    if tmp == exist_paths[i]:
-                        count_same_img += 1
-                    else:
-                        tmp = exist_paths[i]
-                        count_same_img = 1
-
-                    self.es.push_data({'imgVec': face_vectors[i].tolist(),
-                                       'category': 'face',
-                                       'imgPath': source_path}, target_index=self.index)
-                print('face ok.')
+            # face_vectors, exist_paths, _ = self.get_face_features(paths)
+            # if len(face_vectors) > 0:
+            #     tmp = ''
+            #     count_same_img = 1
+            #     for i in range(len(face_vectors)):
+            #         source_path = exist_paths[i]
+            #         if tmp == exist_paths[i]:
+            #             count_same_img += 1
+            #         else:
+            #             tmp = exist_paths[i]
+            #             count_same_img = 1
+            #
+            #         self.es.push_data({'imgVec': face_vectors[i].tolist(),
+            #                            'category': 'face',
+            #                            'imgPath': source_path}, target_index=self.index)
+            #     print('face ok.')
             # ---------------------------------
             # Upload Image Feature
             # ---------------------------------
@@ -205,22 +206,22 @@ def cmd_connect_es():
 
 
 def make_app():
-    ocd = OCD("ocr_module/EAST/pretrained_model/east_mixed_149482/")
-    ocr = OCR()
+    # ocd = OCD("ocr_module/EAST/pretrained_model/east_mixed_149482/")
+    # ocr = OCR()
     # ner = ner_obj()
     # yolo = Detection()
     # facenet = facenet_obj()
-    # imagenet = imagenet_obj()
+    imagenet = imagenet_obj()
 
     es = cmd_connect_es()
 
     args_dict = {
-        "OCD": ocd,
-        "OCR": ocr,
+        # "OCD": ocd,
+        # "OCR": ocr,
         # "ner": ner,
         # "yolo": yolo,
         # "facenet": facenet,
-        # "imagenet": imagenet,
+        "imagenet": imagenet,
         "es_obj": es,
         "index": "ncsist_test",
     }

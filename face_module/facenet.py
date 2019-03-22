@@ -180,7 +180,7 @@ class facenet_obj(object):
                 bounding_boxes, _ = detect_face.detect_face(img, self.mtcnn_minsize, pnet, rnet, onet, self.mtcnn_threshold, self.mtcnn_factor)
             except Exception as e:
                 print(path)
-                misc.imshow(img)
+                # misc.imshow(img)
             nrof_faces = bounding_boxes.shape[0]
 
             if nrof_faces > 0:

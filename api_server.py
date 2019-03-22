@@ -32,11 +32,11 @@ def submit(url, json=None):
 class MainHandler(tornado.web.RequestHandler):
 
     def initialize(self, args_dict):
-        self.OCD = args_dict['OCD']
-        self.OCR = args_dict['OCR']
+        # self.OCD = args_dict['OCD']
+        # self.OCR = args_dict['OCR']
         # self.yolo = args_dict['yolo']
         # self.facenet = args_dict['facenet']
-        # self.imagenet = args_dict['imagenet']
+        self.imagenet = args_dict['imagenet']
         # self.ner = args_dict['ner']
 
     def post(self):
@@ -106,20 +106,20 @@ class MainHandler(tornado.web.RequestHandler):
 
 
 def make_app():
-    ocd = OCD("ocr_module/EAST/pretrained_model/east_mixed_149482/")
-    ocr = OCR()
+    # ocd = OCD("ocr_module/EAST/pretrained_model/east_mixed_149482/")
+    # ocr = OCR()
     # ner = ner_obj()
     # yolo = Detection()
     # facenet = facenet_obj()
-    # imagenet = imagenet_obj()
+    imagenet = imagenet_obj()
 
     args_dict = {
-        "OCD": ocd,
-        "OCR": ocr,
+        # "OCD": ocd,
+        # "OCR": ocr,
         # "ner": ner,
         # "yolo": yolo,
         # "facenet": facenet,
-        # "imagenet": imagenet,
+        "imagenet": imagenet,
     }
     application = tornado.web.Application([(r"/", MainHandler, dict(args_dict=args_dict))])
     # http_server = tornado.httpserver.HTTPServer(application, max_buffer_size=100000)  # default = 100M

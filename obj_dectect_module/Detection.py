@@ -23,6 +23,7 @@ class Detection():
         self.detector = ObjectDetection()
         self.detector.setModelTypeAsYOLOv3()
         self.detector.setModelPath(os.path.join(self.execution_path, "obj_dectect_module", "yolo.h5"))
+        # self.detector.setModelPath(os.path.join(self.execution_path, "yolo.h5"))
         # self.detector.setModelPath(os.path.join("/home/c11tch/workspace/PycharmProjects/JC_Demo",
         #                                         "obj_dectect_module",
         #                                         "yolo.h5"))
@@ -41,16 +42,20 @@ class Detection():
     def detect_by_path_batch(self, imgs_path):
         detection_sources = list()
         detection_keys = list()
+        detection_position = list()
         for img in imgs_path:
             detection_sources.append(img)
             tmp_list = list()
+            position_list = list()
             for it in self.detector.detectObjectsFromImage(input_image=os.path.join(img),
                                                            output_type="array",
                                                            minimum_percentage_probability=30)[1]:
                 tmp_list.append(it['name'])
+                position_list.append(it['box_points'])
             detection_keys.append(tmp_list)
+            detection_position.append(position_list)
         # Only return show_detections words
-        return detection_sources, detection_keys
+        return detection_sources, detection_keys, detection_position
 
     def detect_by_image_batch(self, imgs):
         detection_sources = list()
@@ -76,7 +81,7 @@ class Detection():
 
 if __name__ == '__main__':
     # test_img_path = '/data1/JC_Sample/sample_data_news/img/20180610/國際大事'
-    test_img_path = '/data1/JC_Sample/sample_data_news/img/'
+    test_img_path = '/media/clliao/006a3168-df49-4b0a-a874-891877a888701/TCH/face_images_verysmall'
     img_path = get_images(test_img_path)
 
     st = time.time()
@@ -86,8 +91,9 @@ if __name__ == '__main__':
     sources, keywords = detector.detect_by_path_batch(imgs_path=img_path)
     print('Total detecte time:{0}s'.format(time.time() - st))
 
-    np.save(os.path.join('/data1/JC_Sample/sample_data_news/results', 'detect_source.npy'), sources)
-    np.save(os.path.join('/data1/JC_Sample/sample_data_news/results', 'detect_keywords.npy'), keywords)
+    # Save to local
+    # np.save(os.path.join('/data1/JC_Sample/sample_data_news/results', 'detect_source.npy'), sources)
+    # np.save(os.path.join('/data1/JC_Sample/sample_data_news/results', 'detect_keywords.npy'), keywords)
 
 
 

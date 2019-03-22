@@ -1,5 +1,4 @@
 --- pip ---
-
 pip3 install Pillow scipy opencv-contrib-python matplotlib h5py keras requests tornado jieba python-Levenshtein shapely, hanziconv
 pip3 install -v elasticsearch==6.3.1 numpy==1.14.2 tensorflow-gpu==1.4 scikit-image==0.13.1
 
@@ -14,4 +13,14 @@ pip3 install https://github.com/OlafenwaMoses/ImageAI/releases/download/2.0.2/im
 # for cv2
 apt-get install libglib2.0-0 libsm6 libxext6 libxrender1
 
-------------------------
+------- models --------
+https://drive.google.com/open?id=1ADvzETp45lLQneEzO4Vce9rGDbkR_A5p
+
+contains:
+obj_dectect_module/resnet50_coco_best_v2.0.1.h5
+obj_dectect_module/yolo.h5
+image_vec/pretrained/inception_v3.ckpt
+face_module/pre_train_models
+ocr_module/EAST/pretrained_model
+ocr_module/chinese_ocr/models/*
+-----------------------

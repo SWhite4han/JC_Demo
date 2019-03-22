@@ -211,7 +211,7 @@ class imagenet_obj(object):
                 imgp.extend(path_batch)
             except Exception as e:
                 print(e)
-                print(path_batch)
+                # print(path_batch)
         print(len(vecs))
 
         return imgs, vecs

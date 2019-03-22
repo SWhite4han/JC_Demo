@@ -192,12 +192,12 @@ if __name__ == '__main__':
     # img_2_vec(target_img_path, target_save_path)
     # -----------------------------------------------------------------------------------------------------
 
-    OCD = OCD("/home/c11tch/workspace/PycharmProjects/JC_Demo/ocr_module/EAST/pretrained_model/east_mixed_149482/")
-    OCR = OCR()
+    # OCD = OCD("/home/c11tch/workspace/PycharmProjects/JC_Demo/ocr_module/EAST/pretrained_model/east_mixed_149482/")
+    # OCR = OCR()
 
     # ner = ner_obj()
-    # yolo = Detection()
-    # facenet = facenet_obj()
+    yolo = Detection()
+    facenet = facenet_obj()
     # imagenet = imagenet_obj()
     # ner = ner_obj()
 
