@@ -154,6 +154,11 @@ def read_net_war():
 
 
 if __name__ == '__main__':
+
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    sess = tf.Session(config=config)
+
     # graph = tf.Graph().as_default()
     # gpu_options = tf.GPUOptions(allow_growth=True, per_process_gpu_memory_fraction=0.40)
     # sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, log_device_placement=False))
@@ -192,20 +197,19 @@ if __name__ == '__main__':
     # img_2_vec(target_img_path, target_save_path)
     # -----------------------------------------------------------------------------------------------------
 
-    # OCD = OCD("/home/c11tch/workspace/PycharmProjects/JC_Demo/ocr_module/EAST/pretrained_model/east_mixed_149482/")
-    # OCR = OCR()
+    # -------------- IMPORT OBJ(optional) ---------------
+    OCD = OCD("//mnt/data1/TCH/workspace/JC_Demo/ocr_module/EAST/pretrained_model/east_mixed_149482")
+    OCR = OCR()
 
-    # ner = ner_obj()
     yolo = Detection()
     facenet = facenet_obj()
-    # imagenet = imagenet_obj()
-    # ner = ner_obj()
+    imagenet = imagenet_obj()
+    ner = ner_obj()
+    # -------------- IMPORT OBJ ---------------
 
-    # """
-    # image = cv2.imread('/home/c11tch/Pictures/aPICT0034.JPG')
-    # image = cv2.imread('/data2/Dslab_News/img/AppleDaily/20180129/頭條要聞/要聞/20180129_大聯盟讚張泰山「中職傳奇」/LN05_005.jpg')
-    # image = cv2.imread('/data1/Dataset/OCR/download_pic/26828056_10215357361276865_1857872673_o.jpg')
-    image = cv2.imread('/data1/Dataset/OCR/chinese_board/000012.jpg')
+    # -------------- START: OCR --------------
+    image = cv2.imread(r'/mnt/data1/TCH/people_image/金正恩/000189.jpg')
+
     # EAST
     # image = cv2.resize(image, (0,0), fx=0.8, fy=0.8)
     image_list, masked_image, boxes = OCD.detection(image)
@@ -230,44 +234,27 @@ if __name__ == '__main__':
         # pil_im = Image.fromarray(cv2_im)
         # pil_im.show()
         pass
-    # """
+    # -------------- END: OCR --------------
 
-    # ob = face2vec_for_query(yolo, facenet, [cv2.imread(r'/data1/images/川普/google/000004.jpg')])
-    # print(ob)
+    # -------------- START: FACE + YOLO -----------
+    ob = face2vec_for_query(yolo, facenet, [cv2.imread(r'/mnt/data1/TCH/people_image/000001.jpg')])
+    print(ob)
+    # -------------- END: FACE -------------
+    #
+    keys = ner.evaluate_lines_by_call(['中國商務部副部長鍾山前天證實，中美達成初步協議，近期內將不會調高人民幣匯率。'])
+    print(keys)
+    keys = ner.evaluate_lines_by_call(['乒乓球擂台赛首场半决赛战罢刘国梁王晨取得决赛权(附图片1张)本报浙江余姚1月24日电爱立信中国乒乓球擂台赛今天'])
+    print(keys)
+    keys = ner.evaluate_lines_by_call(['中國商務部副部長鍾山前天證實，中美達成初步協議，近期內將不會調高人民幣匯率。'])
+    print(keys)
 
-    # keys = ner.evaluate_lines_by_call(['中國商務部副部長鍾山前天證實，中美達成初步協議，近期內將不會調高人民幣匯率。'])
-    # print(keys)
-    # keys = ner.evaluate_lines_by_call(['乒乓球擂台赛首场半决赛战罢刘国梁王晨取得决赛权(附图片1张)本报浙江余姚1月24日电爱立信中国乒乓球擂台赛今天'])
-    # print(keys)
-    # keys = ner.evaluate_lines_by_call(['中國商務部副部長鍾山前天證實，中美達成初步協議，近期內將不會調高人民幣匯率。'])
-    # print(keys)
+    # -------------- START: IMAGE -----------
+    _, v = imagenet.img_vec(
+        [r'/mnt/data1/TCH/people_image/金正恩/000098.jpg'])
+    print(v)
+    # -------------- END: IMAGE -------------
 
-    # _, v = imagenet.img_vec(
-    #     [r'/data2/Dslab_News/img/AppleDaily/20181228/蘋果國際/國際頭條/20181228_「老美不爽當世界警察」川普伊拉克勞軍發牢騷 酸各國佔便宜/LA21_001.jpg'])
-    # print(v)
-    #
-    # ob = face2vec_for_query(yolo, facenet,
-    #     [cv2.imread(r'/data2/Dslab_News/img/AppleDaily/20181228/蘋果國際/國際頭條/20181228_「老美不爽當世界警察」川普伊拉克勞軍發牢騷 酸各國佔便宜/LA21_001.jpg')])
-    # print(ob)
-    #
-    # keys = ner.evaluate_lines_by_call(['中國商務部副部長鍾山前天證實，中美達成初步協議，近期內將不會調高人民幣匯率。'])
-    # print(keys)
-    #
-    # _, v = imagenet.img_vec(
-    #     [r'/data1/images/川普/google/000004.jpg'])
-    #
-    # ob = face2vec_for_query(yolo, facenet,
-    #     [r'/data1/images/川普/google/000004.jpg'])
-    # print(ob)
-
-    # ob = face2vec_for_query(yolo, facenet,
-    #     [r'/data2/Dslab_News/img/AppleDaily/20181228/蘋果國際/國際頭條/20181228_「老美不爽當世界警察」川普伊拉克勞軍發牢騷 酸各國佔便宜/LA21_001.jpg'])
-    # print(ob)
-    #
-    # _, v = imagenet.img_vec(
-    #     [r'/data1/images/川普/google/000004.jpg'])
-
-    # TensorBoard
+    # -------------- TensorBoard ------------
     # graph = tf.get_default_graph()
     # writer = tf.summary.FileWriter("TensorBoard/", graph=graph)
     print()

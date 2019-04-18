@@ -29,9 +29,8 @@ def get_images(data_path):
 def face2vec_for_query(yolo, facenet, test_img):
     st = time.time()
     print('Load model spent:{0}s'.format(time.time() - st))
-    # detection = yolo.detect_by_path(img_path=os.path.join(yolo.execution_path, "image2.jpg"))
-    # sources, keywords = yolo.detect_by_path_batch(imgs_path=test_img_path)
-    sources, keywords, _ = yolo.detect_by_image_batch(imgs=test_img)
+
+    sources, keywords = yolo.detect_by_image_batch(imgs=test_img)
 
     print('Total detecte time:{0}s'.format(time.time() - st))
 

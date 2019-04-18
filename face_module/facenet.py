@@ -410,7 +410,7 @@ class facenet_obj(object):
         return imgList
 
     def face2vec(self, image_paths):
-        sess = tf.get_default_session()
+        # sess = tf.get_default_session()
 
         print('loading images')
 

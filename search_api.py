@@ -1,5 +1,6 @@
 # tornado server
 import sys
+import io
 import os
 import time
 import operator
@@ -31,13 +32,32 @@ def submit(url, json=None):
     resp = requests.post(url=url, json=json)
     return resp
 
+
+def download_image(url, image_file_path='/mnt/data1/TCH/sol_image_tmp'):
+    filename = url[url.rfind("/") + 1:]
+    suffix_list = ['jpg', 'gif', 'png', 'tif', 'svg', 'pdf', ]
+
+    r = requests.get(url, timeout=4.0)
+    if r.status_code != requests.codes.ok:
+        assert False, 'Status code error: {}.'.format(r.status_code)
+
+    file_type = filename.split('.')[-1]
+
+    if file_type in suffix_list:
+        out_file_path = os.path.join(image_file_path, filename)
+        with Image.open(io.BytesIO(r.content)) as im:
+            im.save(out_file_path)
+        print('Image downloaded from url: {} and saved to: {}.'.format(url, image_file_path))
+        return out_file_path
+
+
 class MainHandler(tornado.web.RequestHandler):
 
     def initialize(self, args_dict):
-        # self.OCD = args_dict['OCD']
-        # self.OCR = args_dict['OCR']
-        # self.yolo = args_dict['yolo']
-        # self.facenet = args_dict['facenet']
+        self.OCD = args_dict['OCD']
+        self.OCR = args_dict['OCR']
+        self.yolo = args_dict['yolo']
+        self.facenet = args_dict['facenet']
         self.imagenet = args_dict['imagenet']
         # self.ner = args_dict['ner']
         self.es = args_dict['es_obj']
@@ -160,22 +180,22 @@ class MainHandler(tornado.web.RequestHandler):
             # ---------------------------------
             # Upload Face
             # ---------------------------------
-            # face_vectors, exist_paths, _ = self.get_face_features(paths)
-            # if len(face_vectors) > 0:
-            #     tmp = ''
-            #     count_same_img = 1
-            #     for i in range(len(face_vectors)):
-            #         source_path = exist_paths[i]
-            #         if tmp == exist_paths[i]:
-            #             count_same_img += 1
-            #         else:
-            #             tmp = exist_paths[i]
-            #             count_same_img = 1
-            #
-            #         self.es.push_data({'imgVec': face_vectors[i].tolist(),
-            #                            'category': 'face',
-            #                            'imgPath': source_path}, target_index=self.index)
-            #     print('face ok.')
+            face_vectors, exist_paths, _ = self.get_face_features(paths)
+            if len(face_vectors) > 0:
+                tmp = ''
+                count_same_img = 1
+                for i in range(len(face_vectors)):
+                    source_path = exist_paths[i]
+                    if tmp == exist_paths[i]:
+                        count_same_img += 1
+                    else:
+                        tmp = exist_paths[i]
+                        count_same_img = 1
+
+                    self.es.push_data({'imgVec': face_vectors[i].tolist(),
+                                       'category': 'face',
+                                       'imgPath': source_path}, target_index=self.index)
+                print('face ok.')
             # ---------------------------------
             # Upload Image Feature
             # ---------------------------------
@@ -206,24 +226,25 @@ def cmd_connect_es():
 
 
 def make_app():
-    # ocd = OCD("ocr_module/EAST/pretrained_model/east_mixed_149482/")
-    # ocr = OCR()
+    ocd = OCD("ocr_module/EAST/pretrained_model/east_mixed_149482/")
+    ocr = OCR()
     # ner = ner_obj()
-    # yolo = Detection()
-    # facenet = facenet_obj()
+    yolo = Detection()
+    facenet = facenet_obj()
     imagenet = imagenet_obj()
 
     es = cmd_connect_es()
 
     args_dict = {
-        # "OCD": ocd,
-        # "OCR": ocr,
+        "OCD": ocd,
+        "OCR": ocr,
         # "ner": ner,
-        # "yolo": yolo,
-        # "facenet": facenet,
+        "yolo": yolo,
+        "facenet": facenet,
         "imagenet": imagenet,
         "es_obj": es,
-        "index": "ncsist_test",
+        # "index": "ncsist_test",
+        "index": "ui_test",  # ****************************
     }
     application = tornado.web.Application([(r"/", MainHandler, dict(args_dict=args_dict))])
     # http_server = tornado.httpserver.HTTPServer(application, max_buffer_size=100000)  # default = 100M
@@ -232,7 +253,9 @@ def make_app():
 
 
 def main(configure):
-
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    sess = tf.Session(config=config)
     # service
     serv = make_app()
 

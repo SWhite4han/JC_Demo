@@ -9,10 +9,9 @@ face_module/pre_train_models/*
 face_module/sir_db/
 face_module/run/
 image_vec/pretrained/*
-image_vec/data/
+# image_vec/data/
 nlp_module/ner/example/
 obj_dectect_module/*.h5
-TestElasticSearch/
 venv/
 TensorBoard/
 files_need_to_download

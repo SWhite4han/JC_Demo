@@ -1,9 +1,15 @@
 --- pip ---
-pip3 install Pillow scipy opencv-contrib-python matplotlib h5py keras requests tornado jieba python-Levenshtein shapely, hanziconv
-pip3 install -v elasticsearch==6.3.1 numpy==1.14.2 tensorflow-gpu==1.4 scikit-image==0.13.1
+pip3 install Pillow scipy opencv-contrib-python matplotlib h5py requests tornado jieba python-Levenshtein shapely hanziconv
+
+pip3 install -v elasticsearch==6.3.1 numpy==1.14.2 scikit-image==0.13.1 tensorflow-gpu==1.4
+
+# for cuda 10.1 install tf-nightly-gpu instead of tensorflow-gpu
+pip3 install -v tf-nightly==1.13.0dev20190218
+pip3 install keras
 
 --- torch ---
-pip3 install https://download.pytorch.org/whl/cu80/torch-1.0.0-cp35-cp35m-linux_x86_64.whl
+# pip3 install https://download.pytorch.org/whl/cu80/torch-1.0.0-cp35-cp35m-linux_x86_64.whl
+pip3 install https://download.pytorch.org/whl/cu100/torch-1.0.1.post2-cp36-cp36m-linux_x86_64.whl
 pip3 install torchvision
 
 --- yolo ---
@@ -12,6 +18,9 @@ pip3 install https://github.com/OlafenwaMoses/ImageAI/releases/download/2.0.2/im
 --- apt-get ---
 # for cv2
 apt-get install libglib2.0-0 libsm6 libxext6 libxrender1
+
+# for TK
+apt-get install python3-tk
 
 ------- models --------
 https://drive.google.com/open?id=1ADvzETp45lLQneEzO4Vce9rGDbkR_A5p
