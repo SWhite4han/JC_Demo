@@ -60,17 +60,21 @@ class Detection():
     def detect_by_image_batch(self, imgs):
         detection_sources = list()
         detection_keys = list()
+        detection_position = list()
         for img in imgs:
             detection_sources.append(img)
             tmp_list = list()
+            position_list = list()
             for it in self.detector.detectObjectsFromImage(input_image=img,
                                                            input_type="array",
                                                            output_type="array",
                                                            minimum_percentage_probability=30)[1]:
                 tmp_list.append(it['name'])
+                position_list.append(it['box_points'])
             detection_keys.append(tmp_list)
+            detection_position.append(position_list)
         # Only return show_detections words
-        return detection_sources, detection_keys
+        return detection_sources, detection_keys, detection_position
 
     @staticmethod
     def show_detections(detections):

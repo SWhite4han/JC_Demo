@@ -17,12 +17,12 @@ from logging.config import fileConfig
 from nlp_module.ner.eval import ner_obj
 from nlp_module import cc
 from face_module.facenet import facenet_obj
-from face_module.face2vec import face2vec_for_query, face2vec_for_query_path
+from face_module.face2vec import face2vec_for_sol_data
 from obj_dectect_module.Detection import Detection
 from image_vec.img2vec import imagenet_obj
 from ocr_module.chinese_ocr.eval import OCD, OCR
 from PIL import Image
-from Common.common_lib import string2img, img2string
+from Common.common_lib import download_image
 # import upload func
 from TestElasticSearch import NcsistSearchApiPath as InfinitySearchApi
 
@@ -55,30 +55,38 @@ class MainHandler(tornado.web.RequestHandler):
         if len_imgs < 1:
             return None
         for path in image_paths:
-            images.append(cv2.imread(path))
+            # Modify for SOL DATA
+            images.append(cv2.imread(download_image(path)))
 
         _, vectors = self.imagenet.new_img_vec(images)
         return vectors
 
-    def get_face_features(self, image_paths):
+    def get_face_features(self, image_urls):
         """
 
         :param image_paths: a list of image paths
         :return:
         """
         images = []
-        len_imgs = len(image_paths)
+        image_ps = []
+        len_imgs = len(image_urls)
         if len_imgs < 1:
             return None
-        # for path in image_paths:
-        #     images.append(cv2.imread(path))
-        return face2vec_for_query_path(self.yolo, self.facenet, image_paths)
+        for url in image_urls:
+            path = download_image(url)
+            image_ps.append(path)
+            images.append(cv2.imread(path))
+        face_vectors, indices, locations = face2vec_for_sol_data(self.yolo, self.facenet, images, image_ps)
+        exist_paths = [image_urls[i] for i in indices]
+        return face_vectors, exist_paths, locations
 
     def get_ocr_result(self, image_path):
         len_imgs = len(image_path)
 
         # Only calculate first image
         img = image_path[0]
+
+        img = download_image(img)
 
         image = cv2.imread(img)
 

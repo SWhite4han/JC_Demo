@@ -1,9 +1,12 @@
+import io
 import os
 import cv2
 import time
 import base64
 import datetime
+import requests
 import numpy as np
+from PIL import Image
 
 
 def get_images(data_path):
@@ -22,6 +25,24 @@ def get_images(data_path):
                     break
     print('Find {} images'.format(len(files)))
     return files
+
+
+def download_image(url, image_file_path='/mnt/data1/TCH/sol_image_tmp'):
+    filename = url[url.rfind("/") + 1:]
+    suffix_list = ['jpg', 'gif', 'png', 'tif', 'svg', 'pdf', ]
+
+    r = requests.get(url, timeout=4.0)
+    if r.status_code != requests.codes.ok:
+        assert False, 'Status code error: {}.'.format(r.status_code)
+
+    file_type = filename.split('.')[-1]
+
+    if file_type.lower() in suffix_list:
+        out_file_path = os.path.join(image_file_path, filename)
+        with Image.open(io.BytesIO(r.content)) as im:
+            im.save(out_file_path)
+        print('Image downloaded from url: {} and saved to: {}.'.format(url, out_file_path))
+        return out_file_path
 
 
 def batch(iterable, batch_size=1):

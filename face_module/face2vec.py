@@ -30,7 +30,7 @@ def face2vec_for_query(yolo, facenet, test_img):
     st = time.time()
     print('Load model spent:{0}s'.format(time.time() - st))
 
-    sources, keywords = yolo.detect_by_image_batch(imgs=test_img)
+    sources, keywords, _ = yolo.detect_by_image_batch(imgs=test_img)
 
     print('Total detecte time:{0}s'.format(time.time() - st))
 
@@ -49,6 +49,37 @@ def face2vec_for_query(yolo, facenet, test_img):
         return {'response': 'no face in image'}
 
 
+def face2vec_for_sol_data(yolo, facenet, test_img, path):
+    st = time.time()
+    print('Load model spent:{0}s'.format(time.time() - st))
+    # detection = yolo.detect_by_path(img_path=os.path.join(yolo.execution_path, "image2.jpg"))
+
+    # --- Call by image path ---
+    # sources, keywords, obj_locations = yolo.detect_by_path_batch(imgs_path=test_img)
+    # --- Call by image ndarray ---
+    sources, keywords, obj_locations = yolo.detect_by_image_batch(imgs=test_img)
+
+    print('Total detecte time:{0}s'.format(time.time() - st))
+
+    have_face = list()
+    locations = list()
+    indices = list()
+    for idx, keys in enumerate(keywords):
+        if 'person' in keys:
+            have_face.append(path[idx])
+            indices.append(idx)
+
+    if have_face:
+        # --- Call by image path ---
+        db_face_vectors, db_face_source, face_locations = facenet.face2vec(image_paths=have_face)
+        # --- Call by image ndarray ---
+        # db_face_vectors, db_face_source, _ = facenet.new_face2vec(images=have_face)
+
+        return db_face_vectors, indices, face_locations
+    else:
+        return None, None, None
+
+
 def face2vec_for_query_path(yolo, facenet, test_img):
     st = time.time()
     print('Load model spent:{0}s'.format(time.time() - st))
@@ -57,7 +88,7 @@ def face2vec_for_query_path(yolo, facenet, test_img):
     # --- Call by image path ---
     sources, keywords, obj_locations = yolo.detect_by_path_batch(imgs_path=test_img)
     # --- Call by image ndarray ---
-    # sources, keywords = yolo.detect_by_image_batch(imgs=test_img)
+    # sources, keywords, _ = yolo.detect_by_image_batch(imgs=test_img)
 
     print('Total detecte time:{0}s'.format(time.time() - st))
 
