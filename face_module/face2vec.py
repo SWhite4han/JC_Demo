@@ -75,7 +75,7 @@ def face2vec_for_sol_data(yolo, facenet, test_img, path):
         # --- Call by image ndarray ---
         # db_face_vectors, db_face_source, _ = facenet.new_face2vec(images=have_face)
 
-        return db_face_vectors, indices, face_locations
+        return db_face_vectors, db_face_source, face_locations
     else:
         return None, None, None
 

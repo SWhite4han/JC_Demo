@@ -40,6 +40,9 @@ def download_image(url, image_file_path='/mnt/data1/TCH/sol_image_tmp'):
     if file_type.lower() in suffix_list:
         out_file_path = os.path.join(image_file_path, filename)
         with Image.open(io.BytesIO(r.content)) as im:
+            if file_type.lower() != 'png' and im.mode == 'RGBA':
+                # For solving file name of image is 'jpg' but it contents RGBA channels.
+                im = im.convert("RGB")
             im.save(out_file_path)
         print('Image downloaded from url: {} and saved to: {}.'.format(url, out_file_path))
         return out_file_path

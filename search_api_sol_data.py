@@ -27,11 +27,6 @@ from Common.common_lib import download_image
 from TestElasticSearch import NcsistSearchApiPath as InfinitySearchApi
 
 
-def submit(url, json=None):
-    resp = requests.post(url=url, json=json)
-    return resp
-
-
 class MainHandler(tornado.web.RequestHandler):
 
     def initialize(self, args_dict):
@@ -76,9 +71,9 @@ class MainHandler(tornado.web.RequestHandler):
             path = download_image(url)
             image_ps.append(path)
             images.append(cv2.imread(path))
-        face_vectors, indices, locations = face2vec_for_sol_data(self.yolo, self.facenet, images, image_ps)
-        exist_paths = [image_urls[i] for i in indices]
-        return face_vectors, exist_paths, locations
+        face_vectors, face_source, locations = face2vec_for_sol_data(self.yolo, self.facenet, images, image_ps)
+        # exist_paths = [image_urls[i] for i in indices]
+        return face_vectors, face_source, locations
 
     def get_ocr_result(self, image_path):
         len_imgs = len(image_path)
@@ -134,6 +129,8 @@ class MainHandler(tornado.web.RequestHandler):
         task = post_data['task']
         paths = post_data['img_paths']
 
+        print(post_data)
+
         if task == '0':
             # image = [image]
             face_vectors, exist_paths, locations = self.get_face_features(paths)
@@ -170,28 +167,31 @@ class MainHandler(tornado.web.RequestHandler):
             # Upload Face
             # ---------------------------------
             face_vectors, exist_paths, _ = self.get_face_features(paths)
-            if len(face_vectors) > 0:
-                tmp = ''
-                count_same_img = 1
-                for i in range(len(face_vectors)):
-                    source_path = exist_paths[i]
-                    if tmp == exist_paths[i]:
-                        count_same_img += 1
-                    else:
-                        tmp = exist_paths[i]
-                        count_same_img = 1
+            if face_vectors:
+                if len(face_vectors) > 0:
+                    tmp = ''
+                    count_same_img = 1
+                    for i in range(len(face_vectors)):
+                        source_path = exist_paths[i].split('/')[-1]  # only save pic name
+                        if tmp == exist_paths[i]:
+                            count_same_img += 1
+                        else:
+                            tmp = exist_paths[i]
+                            count_same_img = 1
 
-                    self.es.push_data({'imgVec': face_vectors[i].tolist(),
-                                       'category': 'face',
-                                       'imgPath': source_path}, target_index=self.index)
-                print('face ok.')
+                        self.es.push_data({'imgVec': face_vectors[i].tolist(),
+                                           'category': 'face',
+                                           'imgPath': source_path}, target_index=self.index)
+                    print('face ok.')
+            else:
+                print('no face')
             # ---------------------------------
             # Upload Image Feature
             # ---------------------------------
             vecs = self.get_images_feature(image_paths=paths)
             if len(vecs) > 0:
                 for i in range(len(vecs)):
-                    source_path = paths[i]
+                    source_path = paths[i].split('/')[-1]
                     vec = vecs[i].tolist()
                     if len(vec) == 2048:
                         self.es.push_data({'imgVec': vec,
