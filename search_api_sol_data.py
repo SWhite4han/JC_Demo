@@ -25,6 +25,7 @@ from PIL import Image
 from Common.common_lib import download_image
 # import upload func
 from TestElasticSearch import NcsistSearchApiPath as InfinitySearchApi
+from configuration.config import Config
 
 
 class MainHandler(tornado.web.RequestHandler):
@@ -38,6 +39,8 @@ class MainHandler(tornado.web.RequestHandler):
         # self.ner = args_dict['ner']
         self.es = args_dict['es_obj']
         self.index = args_dict['index']
+        self.config = args_dict['config']
+        self.checklist = args_dict['url_checklist']
 
     def get_images_feature(self, image_paths):
         """
@@ -59,7 +62,7 @@ class MainHandler(tornado.web.RequestHandler):
     def get_face_features(self, image_urls):
         """
 
-        :param image_paths: a list of image paths
+        :param image_urls: a list of image urls
         :return:
         """
         images = []
@@ -88,32 +91,47 @@ class MainHandler(tornado.web.RequestHandler):
         # EAST
         image_list, masked_image, boxes = self.OCD.detection(image)
 
-        # cv2 to pil
-        cv2_im = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        pil_im = Image.fromarray(cv2_im)
-        img = pil_im.convert("RGB")
+        if image_list:
+            # cv2 to pil
+            cv2_im = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            pil_im = Image.fromarray(cv2_im)
+            img = pil_im.convert("RGB")
 
-        # ocr
-        result_list = self.OCR.recognize(img, boxes)
-        text_list = dict()
-        for idx, elem in enumerate(result_list):
-            text_list[idx] = elem['text']
+            # ocr
+            result_list = self.OCR.recognize(img, boxes)
 
-        # --
-        # # cv2 to pil, and show
-        # cv2_im = cv2.cvtColor(masked_image, cv2.COLOR_BGR2RGB)
-        # pil_im = Image.fromarray(cv2_im)
-        # pil_im.show()
-        # for idx, elem in enumerate(result_list):
-        #     print("text: %s" % elem['text'])
-        #
-        #     # cv2 to pil
-        #     cv2_im = cv2.cvtColor(image_list[idx], cv2.COLOR_BGR2RGB)
-        #     pil_im = Image.fromarray(cv2_im)
-        #     pil_im.show()
-        # --
+            text_list = dict()
+            for idx, elem in enumerate(result_list):
+                text_list[idx] = elem['text']
 
-        return text_list
+            # --
+            # # cv2 to pil, and show
+            # cv2_im = cv2.cvtColor(masked_image, cv2.COLOR_BGR2RGB)
+            # pil_im = Image.fromarray(cv2_im)
+            # pil_im.show()
+            # for idx, elem in enumerate(result_list):
+            #     print("text: %s" % elem['text'])
+            #
+            #     # cv2 to pil
+            #     cv2_im = cv2.cvtColor(image_list[idx], cv2.COLOR_BGR2RGB)
+            #     pil_im = Image.fromarray(cv2_im)
+            #     pil_im.show()
+            # --
+
+            return text_list
+        else:
+            return []
+
+    def check_redundant(self, paths):
+        new_list = list()
+        status = dict()
+        for p in paths:
+            if p not in self.checklist:
+                new_list.append(p)
+                status[p] = {'status': 'wait'}
+            else:
+                status[p] = {'status': 'redundant'}
+        return new_list, status
 
     def post(self):
         """
@@ -156,13 +174,19 @@ class MainHandler(tornado.web.RequestHandler):
             text_list = self.get_ocr_result(paths)
 
             # self.write({'result_text': text_list, 'result_image': b64})
-            for i, v in text_list.items():
-                text_list[i] = cc.trans_s2t(v)
-            self.write({'result_text': text_list})
+            if text_list:
+                for i, v in text_list.items():
+                    text_list[i] = cc.trans_s2t(v)
+                self.write({'result_text': text_list})
+            else:
+                self.write({'result_text': {}})
 
         elif task == '3':
             pass
         elif task == 'upload_img':
+
+            # wait_list, image_status = self.check_redundant(paths=paths)
+
             # ---------------------------------
             # Upload Face
             # ---------------------------------
@@ -214,7 +238,22 @@ def cmd_connect_es():
         print(ex)
 
 
+def load_json_file(file_path):
+    if os.path.exists(file_path):
+        with open(file_path) as f:
+            check_file = json.load(f)
+    else:
+        check_file = {}
+    return check_file
+
+
+def dump_json_file(file_path, target):
+    with open(file_path) as f:
+        json.dump(target, f)
+
+
 def make_app():
+    cfg = Config()
     ocd = OCD("ocr_module/EAST/pretrained_model/east_mixed_149482/")
     ocr = OCR()
     # ner = ner_obj()
@@ -224,6 +263,8 @@ def make_app():
 
     es = cmd_connect_es()
 
+    url_checklist = load_json_file(cfg.url_checklist_path)
+
     args_dict = {
         "OCD": ocd,
         "OCR": ocr,
@@ -232,6 +273,8 @@ def make_app():
         "facenet": facenet,
         "imagenet": imagenet,
         "es_obj": es,
+        "config": cfg,
+        "url_checklist": url_checklist,
         # "index": "ncsist_test",
         "index": "ui_test",  # ****************************
     }
@@ -242,9 +285,9 @@ def make_app():
 
 
 def main(configure):
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-    sess = tf.Session(config=config)
+    tf_config = tf.ConfigProto()
+    tf_config.gpu_options.allow_growth = True
+    sess = tf.Session(config=tf_config)
     # service
     serv = make_app()
 

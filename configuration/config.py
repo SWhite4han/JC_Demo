@@ -8,6 +8,9 @@ class Config(object):
         self.default_path_ocr = '/data1/Dataset/OCR/'
         self.default_path_face = '/data1/images'
 
+        self.log_path = '/mnt/data1/TCH/tmp_jc/log'
+        self.url_checklist_path = '/mnt/data1/TCH/tmp_jc/checklist.json'
+
 
 
 
