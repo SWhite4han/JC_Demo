@@ -208,32 +208,35 @@ if __name__ == '__main__':
     # -------------- IMPORT OBJ ---------------
 
     # -------------- START: OCR --------------
-    image = cv2.imread(r'/mnt/data1/TCH/people_image/金正恩/000189.jpg')
+    # image = cv2.imread(r'/mnt/data1/TCH/people_image/金正恩/000189.jpg')
+    image = cv2.imread(r'/mnt/data1/TCH/sol_image_tmp/29.jpg')
+    # image = cv2.imread(r'/mnt/data1/TCH/sol_image_tmp/32.jpg')
 
     # EAST
     # image = cv2.resize(image, (0,0), fx=0.8, fy=0.8)
     image_list, masked_image, boxes = OCD.detection(image)
 
-    cv2_im = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    pil_im = Image.fromarray(cv2_im)
-    img = pil_im.convert("RGB")
+    if image_list:
+        cv2_im = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        pil_im = Image.fromarray(cv2_im)
+        img = pil_im.convert("RGB")
 
-    # ocr
-    result_list = OCR.recognize(img, boxes)
+        # ocr
+        result_list = OCR.recognize(img, boxes)
 
-    # cv2 to pil, and show
-    cv2_im = cv2.cvtColor(masked_image, cv2.COLOR_BGR2RGB)
-    pil_im = Image.fromarray(cv2_im)
-    pil_im.show()
+        # cv2 to pil, and show
+        cv2_im = cv2.cvtColor(masked_image, cv2.COLOR_BGR2RGB)
+        pil_im = Image.fromarray(cv2_im)
+        pil_im.show()
 
-    for idx, elem in enumerate(result_list):
-        print(cc.trans_s2t("text: %s" % elem['text']))
+        for idx, elem in enumerate(result_list):
+            print(cc.trans_s2t("text: %s" % elem['text']))
 
-        # cv2 to pil
-        # cv2_im = cv2.cvtColor(image_list[idx], cv2.COLOR_BGR2RGB)
-        # pil_im = Image.fromarray(cv2_im)
-        # pil_im.show()
-        pass
+            # cv2 to pil
+            # cv2_im = cv2.cvtColor(image_list[idx], cv2.COLOR_BGR2RGB)
+            # pil_im = Image.fromarray(cv2_im)
+            # pil_im.show()
+            pass
     # -------------- END: OCR --------------
 
     # -------------- START: FACE + YOLO -----------

@@ -146,7 +146,12 @@ class MainHandler(tornado.web.RequestHandler):
         post_data = json.loads(post_data)
         task = post_data['task']
         paths = post_data['img_paths']
-
+        top_k = post_data.get('top')
+        score_threshold = post_data.get('threshold')
+        if not top_k:
+            top_k = 10
+        if not score_threshold:
+            score_threshold = 0.5
         print(post_data)
 
         if task == '0':
@@ -157,8 +162,9 @@ class MainHandler(tornado.web.RequestHandler):
                 ob = {'imgVec': face_vectors[0].tolist(), 'response': 'good'}
                 # ob2 = {'imgVec': [f.tolist() for f in face_vectors], 'response': 'good'}
                 if self.es:
-                    result = self.es.query_face_result(face_vectors[0].tolist(), target_index=self.index)
-                    self.write(json.dumps(result))
+                    result = self.es.query_face_result(face_vectors[0].tolist(), target_index=self.index, top=top_k)
+                    score_result = [each_rlt for each_rlt in result if each_rlt['_score'] > score_threshold]
+                    self.write(json.dumps(score_result))
 
         elif task == '1':
             v = self.get_images_feature(paths)
@@ -166,8 +172,9 @@ class MainHandler(tornado.web.RequestHandler):
             if v:
                 ob = {'imgVec': v[0].tolist(), 'response': 'good'}
                 if self.es:
-                    result = self.es.query_image_result(v[0].tolist(), target_index=self.index)
-                    self.write(json.dumps(result))
+                    result = self.es.query_image_result(v[0].tolist(), target_index=self.index, top=top_k)
+                    score_result = [each_rlt for each_rlt in result if each_rlt['_score'] > score_threshold]
+                    self.write(json.dumps(score_result))
 
         elif task == '2':
 
