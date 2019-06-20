@@ -1,11 +1,7 @@
 import os
 
 # --------------- Model choice --------------
-# model_path = os.path.join('models', 'traditional_chinese_bilstm')
-# model_path = os.path.join('/home/c11tch/workspace/PycharmProjects/JC_Demo/nlp_module/ner/models',
-#                           'traditional_chinese_bilstm')
-model_path = os.path.join('/mnt/data1/TCH/workspace/JC_Demo/nlp_module/ner/models/',
-                          'traditional_chinese_bilstm')
+model_path = os.path.join(os.path.dirname(__file__), 'models/', 'traditional_chinese_bilstm')
 ckpt_path = os.path.join(model_path, 'ckpt')
 # model_type = 'idcnn'
 model_type = 'bilstm'
