@@ -29,7 +29,7 @@ def get_images(data_path):
 
 def download_image(url, image_file_path='/mnt/data1/TCH/sol_image_tmp'):
     filename = url[url.rfind("/") + 1:]
-    suffix_list = ['jpg', 'gif', 'png', 'tif', 'svg', 'pdf', ]
+    suffix_list = ['jpg', 'gif', 'png', 'tif', 'svg', 'pdf', 'jpeg',]
 
     r = requests.get(url, timeout=4.0)
     if r.status_code != requests.codes.ok:
