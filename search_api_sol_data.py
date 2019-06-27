@@ -10,6 +10,7 @@ import tornado.ioloop
 import tornado.options
 import tornado.web
 import cv2
+import numpy as np
 import logging
 from tensorflow.python.tools import inspect_checkpoint as chkp
 from logging.config import fileConfig
@@ -22,10 +23,11 @@ from obj_dectect_module.Detection import Detection
 from image_vec.img2vec import imagenet_obj
 from ocr_module.chinese_ocr.eval import OCD, OCR
 from PIL import Image
-from Common.common_lib import download_image
+from Common.common_lib import download_image, img2string, string2img
 # import upload func
 from TestElasticSearch import NcsistSearchApiPath as InfinitySearchApi
 from configuration.config import Config
+from fr_module import face_model
 
 
 class MainHandler(tornado.web.RequestHandler):
@@ -41,6 +43,7 @@ class MainHandler(tornado.web.RequestHandler):
         self.index = args_dict['index']
         self.config = args_dict['config']
         self.checklist = args_dict['url_checklist']
+        self.arc_face = args_dict['arcface']
 
     def get_images_feature(self, image_paths):
         """
@@ -77,6 +80,28 @@ class MainHandler(tornado.web.RequestHandler):
         face_vectors, face_source, locations = face2vec_for_sol_data(self.yolo, self.facenet, images, image_ps)
         # exist_paths = [image_urls[i] for i in indices]
         return face_vectors, face_source, locations
+
+    def get_face_location_arcface(self, image_url):
+        """
+
+        :param image_paths: a list of image paths
+        :return:
+        """
+        show_faces = []
+
+        path = download_image(image_url)
+        raw_image = cv2.imread(path)
+        aligned_imgs, bound_boxs = self.arc_face.get_multi_input(raw_image)
+        if aligned_imgs is not None:
+            for i in range(len(aligned_imgs)):
+                # aligned_img = aligned_imgs[i]
+                bbox = bound_boxs[i]
+                face = cv2.cvtColor(raw_image[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])], cv2.COLOR_BGR2RGB)
+                show_faces.append(img2string(face))
+            return aligned_imgs, bound_boxs, show_faces
+
+    def get_face_feature_arcface(self, vec):
+        return self.arc_face.get_feature(vec)
 
     def get_ocr_result(self, image_path):
         len_imgs = len(image_path)
@@ -145,9 +170,10 @@ class MainHandler(tornado.web.RequestHandler):
         post_data = self.request.body.decode('utf-8')
         post_data = json.loads(post_data)
         task = post_data['task']
-        paths = post_data['img_paths']
+        paths = post_data.get('img_paths')
         top_k = post_data.get('top')
         score_threshold = post_data.get('threshold')
+        feature_vec = post_data.get('feature')
         if not top_k:
             top_k = 10
         if not score_threshold:
@@ -190,6 +216,28 @@ class MainHandler(tornado.web.RequestHandler):
 
         elif task == '3':
             pass
+        elif task == '4':
+            img_url = paths[0]
+            try:
+                aligned_imgs, bound_boxs, show_faces = self.get_face_location_arcface(img_url)
+                if show_faces:
+                    num_face = len(show_faces)
+                    message = {'total': num_face, 'face': []}
+                    for i in range(num_face):
+                        message['face'].append({'pic': show_faces[i], 'feature': aligned_imgs[i].tolist()})
+                    self.write(message)
+                else:
+                    self.write({'total': 0, 'face': []})
+            except Exception as e:
+                print(e)
+                self.write({'total': 0, 'face': []})
+
+        elif task == '5':
+            face_vectors = self.get_face_feature_arcface(np.array(feature_vec))
+            if self.es:
+                result = self.es.query_face_result(face_vectors.tolist(), target_index=self.index, top=top_k)
+                score_result = [each_rlt for each_rlt in result if each_rlt['_score'] > score_threshold]
+                self.write(json.dumps(score_result))
         elif task == 'upload_img':
 
             # wait_list, image_status = self.check_redundant(paths=paths)
@@ -197,20 +245,17 @@ class MainHandler(tornado.web.RequestHandler):
             # ---------------------------------
             # Upload Face
             # ---------------------------------
-            face_vectors, exist_paths, _ = self.get_face_features(paths)
-            if face_vectors:
-                if len(face_vectors) > 0:
-                    tmp = ''
-                    count_same_img = 1
-                    for i in range(len(face_vectors)):
-                        source_path = exist_paths[i].split('/')[-1]  # only save pic name
-                        if tmp == exist_paths[i]:
-                            count_same_img += 1
-                        else:
-                            tmp = exist_paths[i]
-                            count_same_img = 1
-
-                        self.es.push_data({'imgVec': face_vectors[i].tolist(),
+            # face_vectors, exist_paths, _ = self.get_face_features(paths)
+            for path in paths:
+                try:
+                    aligned_imgs, bound_boxs, show_faces = self.get_face_location_arcface(path)
+                except Exception as e:
+                    print(e)
+                if aligned_imgs is not None:
+                    for aligned_img in aligned_imgs:
+                        face_vectors = self.get_face_feature_arcface(aligned_img)
+                        source_path = path.split('/')[-1]
+                        self.es.push_data({'imgVec': face_vectors.tolist(),
                                            'category': 'face',
                                            'imgPath': source_path}, target_index=self.index)
                     print('face ok.')
@@ -267,9 +312,11 @@ def make_app():
     yolo = Detection()
     facenet = facenet_obj()
     imagenet = imagenet_obj()
+    arc_face = face_model.FaceModel(cfg)
 
     es = cmd_connect_es()
 
+    cfg = Config()
     url_checklist = load_json_file(cfg.url_checklist_path)
 
     args_dict = {
@@ -278,12 +325,13 @@ def make_app():
         # "ner": ner,
         "yolo": yolo,
         "facenet": facenet,
+        "arcface": arc_face,
         "imagenet": imagenet,
         "es_obj": es,
         "config": cfg,
         "url_checklist": url_checklist,
         # "index": "ncsist_test",
-        "index": "ui_test",  # ****************************
+        "index": "ui_test_arcface",  # ****************************
     }
     application = tornado.web.Application([(r"/", MainHandler, dict(args_dict=args_dict))])
     # http_server = tornado.httpserver.HTTPServer(application, max_buffer_size=100000)  # default = 100M
