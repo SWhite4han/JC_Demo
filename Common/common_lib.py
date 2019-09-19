@@ -15,7 +15,7 @@ def get_images(data_path):
     :return: list of files found
     '''
     files = []
-    exts = ['jpg', 'png', 'jpeg', 'JPG']
+    exts = ['jpg', 'gif', 'png', 'tif', 'svg', 'pdf', 'jpeg', 'bmp', ]
     # for parent, dirnames, filenames in os.walk(conf.test_data_path):
     for parent, dirnames, filenames in os.walk(data_path):
         for filename in filenames:
@@ -27,9 +27,11 @@ def get_images(data_path):
     return files
 
 
-def download_image(url, image_file_path='/mnt/data1/TCH/sol_image_tmp'):
+def download_image(url, image_store_path=None):
+    if image_store_path is None:
+        assert False, 'Store path error. Please set image_store_path'
     filename = url[url.rfind("/") + 1:]
-    suffix_list = ['jpg', 'gif', 'png', 'tif', 'svg', 'pdf', 'jpeg',]
+    suffix_list = ['jpg', 'gif', 'png', 'tif', 'svg', 'pdf', 'jpeg', 'bmp', ]
 
     r = requests.get(url, timeout=4.0)
     if r.status_code != requests.codes.ok:
@@ -38,7 +40,7 @@ def download_image(url, image_file_path='/mnt/data1/TCH/sol_image_tmp'):
     file_type = filename.split('.')[-1]
 
     if file_type.lower() in suffix_list:
-        out_file_path = os.path.join(image_file_path, filename)
+        out_file_path = os.path.join(image_store_path, filename)
         with Image.open(io.BytesIO(r.content)) as im:
             if file_type.lower() != 'png' and im.mode == 'RGBA':
                 # For solving file name of image is 'jpg' but it contents RGBA channels.
@@ -46,6 +48,8 @@ def download_image(url, image_file_path='/mnt/data1/TCH/sol_image_tmp'):
             im.save(out_file_path)
         print('Image downloaded from url: {} and saved to: {}.'.format(url, out_file_path))
         return out_file_path
+    else:
+        assert False, 'Image type error: not in {}.'.format(suffix_list)
 
 
 def batch(iterable, batch_size=1):
