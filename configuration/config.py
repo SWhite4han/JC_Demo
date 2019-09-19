@@ -8,8 +8,13 @@ class Config(object):
         self.default_path_ocr = '/data1/Dataset/OCR/'
         self.default_path_face = '/data1/images'
 
+        # Remove this file if you removed index from elk.
+        self.index = 'ui_test_arcface'  # 院內
+        # self.index = 'ui_test'  # 院外
+
         self.log_path = '/mnt/data1/TCH/tmp_jc/log'
-        self.url_checklist_path = '/mnt/data1/TCH/tmp_jc/checklist.json'
+        self.url_checklist_path = 'checklist'
+        self.store_path = '/home/user/Pictures/sol_image_tmp'
 
         # For arc face
         self.image_dir = "./test_img"
