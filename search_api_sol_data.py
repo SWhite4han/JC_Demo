@@ -44,6 +44,8 @@ class MainHandler(tornado.web.RequestHandler):
         self.config = args_dict['config']
         self.checklist = args_dict['url_checklist']
         self.arc_face = args_dict['arcface']
+        self.log = args_dict['logger']
+        self.store_path = args_dict['store_path']
 
     def get_images_feature(self, image_paths):
         """
@@ -56,10 +58,13 @@ class MainHandler(tornado.web.RequestHandler):
         if len_imgs < 1:
             return None
         for path in image_paths:
-            # Modify for SOL DATA
-            images.append(cv2.imread(download_image(path)))
+            # Modify for SOL DATA (use file path instead of image)
+            try:
+                images.append(cv2.imread(download_image(path, self.store_path)))
+            except Exception as e:
+                self.log.error(e)
 
-        _, vectors = self.imagenet.new_img_vec(images)
+        imgs, vectors = self.imagenet.new_img_vec(images)
         return vectors
 
     def get_face_features(self, image_urls):
@@ -74,7 +79,7 @@ class MainHandler(tornado.web.RequestHandler):
         if len_imgs < 1:
             return None
         for url in image_urls:
-            path = download_image(url)
+            path = download_image(url, self.store_path)
             image_ps.append(path)
             images.append(cv2.imread(path))
         face_vectors, face_source, locations = face2vec_for_sol_data(self.yolo, self.facenet, images, image_ps)
@@ -89,14 +94,15 @@ class MainHandler(tornado.web.RequestHandler):
         """
         show_faces = []
 
-        path = download_image(image_url)
+        path = download_image(image_url, self.store_path)
         raw_image = cv2.imread(path)
         aligned_imgs, bound_boxs = self.arc_face.get_multi_input(raw_image)
         if aligned_imgs is not None:
             for i in range(len(aligned_imgs)):
                 # aligned_img = aligned_imgs[i]
                 bbox = bound_boxs[i]
-                face = cv2.cvtColor(raw_image[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])], cv2.COLOR_BGR2RGB)
+                # face = cv2.cvtColor(raw_image[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])], cv2.COLOR_BGR2RGB)
+                face = raw_image[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])]
                 show_faces.append(img2string(face))
             return aligned_imgs, bound_boxs, show_faces
 
@@ -109,7 +115,7 @@ class MainHandler(tornado.web.RequestHandler):
         # Only calculate first image
         img = image_path[0]
 
-        img = download_image(img)
+        img = download_image(img, self.store_path)
 
         image = cv2.imread(img)
 
@@ -153,9 +159,10 @@ class MainHandler(tornado.web.RequestHandler):
         for p in paths:
             if p not in self.checklist:
                 new_list.append(p)
-                status[p] = {'status': 'wait'}
+                # status[p] = {'status': 'wait'}
             else:
-                status[p] = {'status': 'redundant'}
+                # status[p] = {'status': 'redundant'}
+                status[p] = 'redundant'
         return new_list, status
 
     def post(self):
@@ -178,7 +185,7 @@ class MainHandler(tornado.web.RequestHandler):
             top_k = 10
         if not score_threshold:
             score_threshold = 0.5
-        print(post_data)
+        self.log.info(post_data)
 
         if task == '0':
             # image = [image]
@@ -196,10 +203,12 @@ class MainHandler(tornado.web.RequestHandler):
             v = self.get_images_feature(paths)
             # ################################################### search img with v[0].tolist() #####################################
             if v:
-                ob = {'imgVec': v[0].tolist(), 'response': 'good'}
+                # ob = {'imgVec': v[0].tolist(), 'response': 'good'}
                 if self.es:
                     result = self.es.query_image_result(v[0].tolist(), target_index=self.index, top=top_k)
                     score_result = [each_rlt for each_rlt in result if each_rlt['_score'] > score_threshold]
+                    self.log.info('return:{0}'.format(score_result))
+                    self.log.info('len of return:{0}'.format(len(score_result)))
                     self.write(json.dumps(score_result))
 
         elif task == '2':
@@ -208,6 +217,7 @@ class MainHandler(tornado.web.RequestHandler):
 
             # self.write({'result_text': text_list, 'result_image': b64})
             if text_list:
+                # force transport simple chinese to traditional chinese
                 for i, v in text_list.items():
                     text_list[i] = cc.trans_s2t(v)
                 self.write({'result_text': text_list})
@@ -229,28 +239,36 @@ class MainHandler(tornado.web.RequestHandler):
                 else:
                     self.write({'total': 0, 'face': []})
             except Exception as e:
-                print(e)
+                self.log.error(e)
                 self.write({'total': 0, 'face': []})
 
         elif task == '5':
             face_vectors = self.get_face_feature_arcface(np.array(feature_vec))
             if self.es:
-                result = self.es.query_face_result(face_vectors.tolist(), target_index=self.index, top=top_k)
+                result = self.es.query_face_result(
+                    face_vectors.tolist(),
+                    target_index=self.index,
+                    top=top_k,
+                    method='im_cosine'
+                )
                 score_result = [each_rlt for each_rlt in result if each_rlt['_score'] > score_threshold]
                 self.write(json.dumps(score_result))
         elif task == 'upload_img':
 
-            # wait_list, image_status = self.check_redundant(paths=paths)
+            wait_list, redundants = self.check_redundant(paths=paths)  #####################################################
+            paths = wait_list
 
             # ---------------------------------
             # Upload Face
             # ---------------------------------
-            # face_vectors, exist_paths, _ = self.get_face_features(paths)
+            upload_check = dict()
+            upload_check.update(redundants)
             for path in paths:
                 try:
                     aligned_imgs, bound_boxs, show_faces = self.get_face_location_arcface(path)
                 except Exception as e:
-                    print(e)
+                    self.log.error(e)
+                    aligned_imgs = None  # For check
                 if aligned_imgs is not None:
                     for aligned_img in aligned_imgs:
                         face_vectors = self.get_face_feature_arcface(aligned_img)
@@ -258,31 +276,50 @@ class MainHandler(tornado.web.RequestHandler):
                         self.es.push_data({'imgVec': face_vectors.tolist(),
                                            'category': 'face',
                                            'imgPath': source_path}, target_index=self.index)
-                    print('face ok.')
-            else:
-                print('no face')
+                    self.log.info('{0} face ok.'.format(path))
+                    upload_check[path] = "ok"
+                else:
+                    self.log.info('{0} no face'.format(path))
+                    upload_check[path] = "fail"
             # ---------------------------------
             # Upload Image Feature
             # ---------------------------------
-            vecs = self.get_images_feature(image_paths=paths)
-            if len(vecs) > 0:
-                for i in range(len(vecs)):
-                    source_path = paths[i].split('/')[-1]
-                    vec = vecs[i].tolist()
-                    if len(vec) == 2048:
-                        self.es.push_data({'imgVec': vec,
-                                           'category': 'img',
-                                           'imgPath': source_path}, target_index=self.index)
-                print('image ok.')
-            # ---------------------------------
-            self.write({"response": "Upload succeeded."})
+            if paths:
+                upload_check_img = dict()
+                upload_check_img.update(redundants)
+                for i in range(len(paths)):
+                    path = paths[i]
+                    try:
+                        vecs = self.get_images_feature(image_paths=[path])
+                        if len(vecs) > 0 and len(vecs[0]) == 2048:
+                            source_path = paths[i].split('/')[-1]
+                            vec = vecs[0].tolist()
+                            self.es.push_data({'imgVec': vec,
+                                               'category': 'img',
+                                               'imgPath': source_path}, target_index=self.index)
+                            upload_check_img[path] = "ok"
+                        else:
+                            upload_check_img[path] = "fail"
+                    except Exception as e:
+                        upload_check_img[path] = "fail"
+                        self.log.error(e)
+
+                self.log.info('image ok.')
+                # ---------------------------------
+                self.checklist.update(upload_check_img)
+            else:
+                upload_check_img = redundants
+            dump_json_file(os.path.join(self.config.url_checklist_path, '{0}_checklist.json'.format(self.config.index)),
+                           self.checklist)
+            self.log.info('Images are uploaded.')
+            self.write({"face_upload_check": upload_check, "img_upload_check": upload_check_img})
             pass
         # self.write("ok")
 
 
 def cmd_connect_es():
     try:
-        es_obj = InfinitySearchApi.InfinitySearch('hosts=10.10.53.201,10.10.53.204,10.10.53.207;port=9200;id=esadmin;passwd=esadmin@2018')
+        es_obj = InfinitySearchApi.InfinitySearch('hosts=10.102.9.28,10.102.9.29,10.102.9.30;port=9200;id=esadmin;passwd=esadmin@2019')
         status = es_obj.status()
         print(status)
         return es_obj
@@ -292,16 +329,38 @@ def cmd_connect_es():
 
 def load_json_file(file_path):
     if os.path.exists(file_path):
-        with open(file_path) as f:
+        with open(file_path, 'r') as f:
             check_file = json.load(f)
     else:
         check_file = {}
+        dump_json_file(file_path, check_file)
     return check_file
 
 
 def dump_json_file(file_path, target):
-    with open(file_path) as f:
-        json.dump(target, f)
+    with open(file_path, 'w') as f:
+        json.dump(target, f, ensure_ascii=False)
+
+
+def log():
+    # 基礎設定
+    logging.basicConfig(level=logging.DEBUG,
+                        format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                        datefmt='%m-%d %H:%M',
+                        handlers=[logging.FileHandler('api_server.log', 'a', 'utf-8'), ])
+
+    # 定義 handler 輸出 sys.stderr
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    # 設定輸出格式
+    formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+    # handler 設定輸出格式
+    console.setFormatter(formatter)
+    # 加入 hander 到 root logger
+    logging.getLogger('').addHandler(console)
+
+    log = logging.getLogger(__name__)
+    return log
 
 
 def make_app():
@@ -316,8 +375,11 @@ def make_app():
 
     es = cmd_connect_es()
 
+    # log
+    logger = log()
+
     cfg = Config()
-    url_checklist = load_json_file(cfg.url_checklist_path)
+    url_checklist = load_json_file(os.path.join(cfg.url_checklist_path, '{0}_checklist.json'.format(cfg.index)))
 
     args_dict = {
         "OCD": ocd,
@@ -330,8 +392,9 @@ def make_app():
         "es_obj": es,
         "config": cfg,
         "url_checklist": url_checklist,
-        # "index": "ncsist_test",
-        "index": "ui_test_arcface",  # ****************************
+        "index": cfg.index,
+        "logger": logger,
+        "store_path": cfg.store_path
     }
     application = tornado.web.Application([(r"/", MainHandler, dict(args_dict=args_dict))])
     # http_server = tornado.httpserver.HTTPServer(application, max_buffer_size=100000)  # default = 100M
