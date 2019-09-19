@@ -20,8 +20,8 @@ from PIL import Image
 
 def save_json():
     """
-    
-    :return: 
+
+    :return:
     """
     print()
 
@@ -198,66 +198,122 @@ if __name__ == '__main__':
     # -----------------------------------------------------------------------------------------------------
 
     # -------------- IMPORT OBJ(optional) ---------------
-    OCD = OCD("//mnt/data1/TCH/workspace/JC_Demo/ocr_module/EAST/pretrained_model/east_mixed_149482")
-    OCR = OCR()
+    # OCD = OCD("ocr_module/EAST/pretrained_model/east_mixed_149482")
+    # OCR = OCR()
 
-    yolo = Detection()
-    facenet = facenet_obj()
-    imagenet = imagenet_obj()
-    ner = ner_obj()
+    # yolo = Detection()
+    # facenet = facenet_obj()
+    # imagenet = imagenet_obj()
+    # ner = ner_obj()
+
+    # For arc face
+    from fr_module import face_model
+    from configuration.config import Config
+
+    cfg = Config()
+    arc_face = face_model.FaceModel(cfg)
+
     # -------------- IMPORT OBJ ---------------
 
     # -------------- START: OCR --------------
-    # image = cv2.imread(r'/mnt/data1/TCH/people_image/金正恩/000189.jpg')
-    image = cv2.imread(r'/mnt/data1/TCH/sol_image_tmp/29.jpg')
-    # image = cv2.imread(r'/mnt/data1/TCH/sol_image_tmp/32.jpg')
-
-    # EAST
-    # image = cv2.resize(image, (0,0), fx=0.8, fy=0.8)
-    image_list, masked_image, boxes = OCD.detection(image)
-
-    if image_list:
-        cv2_im = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        pil_im = Image.fromarray(cv2_im)
-        img = pil_im.convert("RGB")
-
-        # ocr
-        result_list = OCR.recognize(img, boxes)
-
-        # cv2 to pil, and show
-        cv2_im = cv2.cvtColor(masked_image, cv2.COLOR_BGR2RGB)
-        pil_im = Image.fromarray(cv2_im)
-        pil_im.show()
-
-        for idx, elem in enumerate(result_list):
-            print(cc.trans_s2t("text: %s" % elem['text']))
-
-            # cv2 to pil
-            # cv2_im = cv2.cvtColor(image_list[idx], cv2.COLOR_BGR2RGB)
-            # pil_im = Image.fromarray(cv2_im)
-            # pil_im.show()
-            pass
+    # # image = cv2.imread(r'/mnt/data1/TCH/people_image/金正恩/000189.jpg')
+    # image = cv2.imread(r'/mnt/data1/TCH/sol_image_tmp/29.jpg')
+    # # image = cv2.imread(r'/mnt/data1/TCH/sol_image_tmp/32.jpg')
+    #
+    # # EAST
+    # # image = cv2.resize(image, (0,0), fx=0.8, fy=0.8)
+    # image_list, masked_image, boxes = OCD.detection(image)
+    #
+    # if image_list:
+    #     cv2_im = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    #     pil_im = Image.fromarray(cv2_im)
+    #     img = pil_im.convert("RGB")
+    #
+    #     # ocr
+    #     result_list = OCR.recognize(img, boxes)
+    #
+    #     # cv2 to pil, and show
+    #     cv2_im = cv2.cvtColor(masked_image, cv2.COLOR_BGR2RGB)
+    #     pil_im = Image.fromarray(cv2_im)
+    #     pil_im.show()
+    #
+    #     for idx, elem in enumerate(result_list):
+    #         print(cc.trans_s2t("text: %s" % elem['text']))
+    #
+    #         # cv2 to pil
+    #         # cv2_im = cv2.cvtColor(image_list[idx], cv2.COLOR_BGR2RGB)
+    #         # pil_im = Image.fromarray(cv2_im)
+    #         # pil_im.show()
+    #         pass
     # -------------- END: OCR --------------
 
     # -------------- START: FACE + YOLO -----------
-    ob = face2vec_for_query(yolo, facenet, [cv2.imread(r'/mnt/data1/TCH/people_image/000001.jpg')])
-    print(ob)
+    # ob = face2vec_for_query(yolo, facenet, [cv2.imread(r'/mnt/data1/TCH/people_image/000001.jpg')])
+    # print(ob)
     # -------------- END: FACE -------------
     #
-    keys = ner.evaluate_lines_by_call(['中國商務部副部長鍾山前天證實，中美達成初步協議，近期內將不會調高人民幣匯率。'])
-    print(keys)
-    keys = ner.evaluate_lines_by_call(['乒乓球擂台赛首场半决赛战罢刘国梁王晨取得决赛权(附图片1张)本报浙江余姚1月24日电爱立信中国乒乓球擂台赛今天'])
-    print(keys)
-    keys = ner.evaluate_lines_by_call(['中國商務部副部長鍾山前天證實，中美達成初步協議，近期內將不會調高人民幣匯率。'])
-    print(keys)
+    # keys = ner.evaluate_lines_by_call(['中國商務部副部長鍾山前天證實，中美達成初步協議，近期內將不會調高人民幣匯率。'])
+    # print(keys)
+    # keys = ner.evaluate_lines_by_call(['乒乓球擂台赛首场半决赛战罢刘国梁王晨取得决赛权(附图片1张)本报浙江余姚1月24日电爱立信中国乒乓球擂台赛今天'])
+    # print(keys)
+    # keys = ner.evaluate_lines_by_call(['中國商務部副部長鍾山前天證實，中美達成初步協議，近期內將不會調高人民幣匯率。'])
+    # print(keys)
 
     # -------------- START: IMAGE -----------
-    _, v = imagenet.img_vec(
-        [r'/mnt/data1/TCH/people_image/金正恩/000098.jpg'])
-    print(v)
+    # _, v = imagenet.img_vec(
+    #     [r'/mnt/data1/TCH/people_image/金正恩/000098.jpg'])
+    # print(v)
     # -------------- END: IMAGE -------------
 
     # -------------- TensorBoard ------------
     # graph = tf.get_default_graph()
     # writer = tf.summary.FileWriter("TensorBoard/", graph=graph)
     print()
+
+    # -------------------- mxnet FACE TEST ------------------------
+    # face_lst = [
+    #     # r'/mnt/data1/TCH/sol_image_tmp/5604.jpg',
+    #     r'/mnt/data1/TCH/sol_image_tmp/4906.jpg',
+    #     # r'/mnt/data1/TCH/sol_image_tmp/111.jpg',
+    #     # r'/mnt/data1/TCH/people_image/金正恩/000098.jpg',
+    #     # r'/mnt/data1/TCH/sol_image_tmp/4970.jpg',
+    #     # r'/mnt/data1/TCH/sol_image_tmp/4984.jpg',
+    # ]
+    # for raw_img_path in face_lst:
+    #     raw_img = cv2.imread(raw_img_path)
+    #     aligned_imgs, bound_box = arc_face.get_multi_input(raw_img)
+    #     if aligned_imgs is not None:
+    #         for i in range(len(aligned_imgs)):
+    #             aligned_img = aligned_imgs[i]
+    #             bbox = bound_box[i]
+    #             # For showing crouped image
+    #             cv2_im = cv2.cvtColor(raw_img[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])], cv2.COLOR_BGR2RGB)
+    #             pil_im = Image.fromarray(cv2_im)
+    #             pil_im.show()
+    #             vec_arc = arc_face.get_feature(aligned_img)
+    #             # vec_arc = arc_face.get_feature(np.array(aligned_img.tolist()))
+    #             print('arc_face', vec_arc)
+
+    face_lst = [
+        r'/home/user/Pictures/sol_image_tmp/5604.jpg',
+        # r'/home/user/Pictures/sol_image_tmp/2746.jpg',
+        r'/home/user/Pictures/sol_image_tmp/111.jpg',
+    ]
+    compare = []
+    name = []
+    for raw_img_path in face_lst:
+        raw_img = cv2.imread(raw_img_path)
+        aligned_imgs, bound_box = arc_face.get_multi_input(raw_img)
+        if aligned_imgs is not None:
+            for i in range(len(aligned_imgs)):
+                aligned_img = aligned_imgs[i]
+                vec_arc = arc_face.get_feature(aligned_img)
+                compare.append(vec_arc)
+                name.append(raw_img_path)
+
+    from scipy import spatial
+    for i in range(len(compare)):
+        dist_euclidean = np.linalg.norm(compare[0] - compare[i])
+        dist_cos = 1 - spatial.distance.cosine(compare[0], compare[i])
+        print(dist_euclidean, dist_cos, name[i])
+

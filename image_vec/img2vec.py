@@ -212,7 +212,8 @@ class imagenet_obj(object):
             except Exception as e:
                 print(e)
                 # print(path_batch)
-        print(len(vecs))
+        print('len of img vecs', len(vecs))
+        print('len of imgs', len(imgs))
 
         return imgs, vecs
 
