@@ -159,9 +159,7 @@ class MainHandler(tornado.web.RequestHandler):
         for p in paths:
             if p not in self.checklist:
                 new_list.append(p)
-                # status[p] = {'status': 'wait'}
             else:
-                # status[p] = {'status': 'redundant'}
                 status[p] = 'redundant'
         return new_list, status
 
@@ -254,15 +252,13 @@ class MainHandler(tornado.web.RequestHandler):
                 score_result = [each_rlt for each_rlt in result if each_rlt['_score'] > score_threshold]
                 self.write(json.dumps(score_result))
         elif task == 'upload_img':
-
             wait_list, redundants = self.check_redundant(paths=paths)  #####################################################
             paths = wait_list
-
+            upload_check = dict()
+            upload_check.update(redundants)
             # ---------------------------------
             # Upload Face
             # ---------------------------------
-            upload_check = dict()
-            upload_check.update(redundants)
             for path in paths:
                 try:
                     aligned_imgs, bound_boxs, show_faces = self.get_face_location_arcface(path)
@@ -277,16 +273,14 @@ class MainHandler(tornado.web.RequestHandler):
                                            'category': 'face',
                                            'imgPath': source_path}, target_index=self.index)
                     self.log.info('{0} face ok.'.format(path))
-                    upload_check[path] = "ok"
+                    upload_check[path] = 'ok'
                 else:
                     self.log.info('{0} no face'.format(path))
-                    upload_check[path] = "fail"
+                    upload_check[path] = 'fail'
             # ---------------------------------
             # Upload Image Feature
             # ---------------------------------
             if paths:
-                upload_check_img = dict()
-                upload_check_img.update(redundants)
                 for i in range(len(paths)):
                     path = paths[i]
                     try:
@@ -297,24 +291,37 @@ class MainHandler(tornado.web.RequestHandler):
                             self.es.push_data({'imgVec': vec,
                                                'category': 'img',
                                                'imgPath': source_path}, target_index=self.index)
-                            upload_check_img[path] = "ok"
+                            # if upload_check.get(path) != 'fail':
+                            upload_check[path] = 'ok'
                         else:
-                            upload_check_img[path] = "fail"
+                            upload_check[path] = 'fail'
                     except Exception as e:
-                        upload_check_img[path] = "fail"
+                        upload_check[path] = 'fail'
                         self.log.error(e)
 
                 self.log.info('image ok.')
                 # ---------------------------------
-                self.checklist.update(upload_check_img)
-            else:
-                upload_check_img = redundants
+            # ---------------------------------
+            # OCR Result
+            # ---------------------------------
+            test_rlt = {
+                '0': 'This',
+                '1': 'is',
+                '2': 'test',
+                '3': 'example',
+            }
+            ocr_result = dict()
+            for path in paths:
+                if upload_check.get(path) == 'ok':
+                    ocr_result[path] = test_rlt
+                else:
+                    ocr_result[path] = {}
+            # Saving check list.
+            self.checklist.update(upload_check)
             dump_json_file(os.path.join(self.config.url_checklist_path, '{0}_checklist.json'.format(self.config.index)),
                            self.checklist)
             self.log.info('Images are uploaded.')
-            self.write({"face_upload_check": upload_check, "img_upload_check": upload_check_img})
-            pass
-        # self.write("ok")
+            self.write({"upload_check": upload_check, "ocr_result": ocr_result})
 
 
 def cmd_connect_es():
