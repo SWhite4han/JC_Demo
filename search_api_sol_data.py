@@ -1,11 +1,7 @@
 # tornado server
 import sys
 import os
-import time
-import operator
 import json
-import requests
-import tensorflow as tf
 import tornado.ioloop
 import tornado.options
 import tornado.web
@@ -15,19 +11,18 @@ import logging
 from tensorflow.python.tools import inspect_checkpoint as chkp
 from logging.config import fileConfig
 
-from nlp_module.ner.eval import ner_obj
+# from nlp_module.ner.eval import ner_obj
 from nlp_module import cc
-from face_module.facenet import facenet_obj
-from face_module.face2vec import face2vec_for_sol_data
-from obj_dectect_module.Detection import Detection
 from image_vec.img2vec import imagenet_obj
-from ocr_module.chinese_ocr.eval import OCD, OCR
 from PIL import Image
 from Common.common_lib import download_image, img2string, string2img
 # import upload func
 from TestElasticSearch import NcsistSearchApiPath as InfinitySearchApi
 from configuration.config import Config
 from fr_module import face_model
+from text_recognition.demo_chinese import parser, inference
+from text_recognition.detection import Detection
+from text_recognition.ocr_module.chinese_ocr.eval import OCR
 
 
 class MainHandler(tornado.web.RequestHandler):
@@ -35,10 +30,7 @@ class MainHandler(tornado.web.RequestHandler):
     def initialize(self, args_dict):
         self.OCD = args_dict['OCD']
         self.OCR = args_dict['OCR']
-        self.yolo = args_dict['yolo']
-        self.facenet = args_dict['facenet']
         self.imagenet = args_dict['imagenet']
-        # self.ner = args_dict['ner']
         self.es = args_dict['es_obj']
         self.index = args_dict['index']
         self.config = args_dict['config']
@@ -67,25 +59,6 @@ class MainHandler(tornado.web.RequestHandler):
         imgs, vectors = self.imagenet.new_img_vec(images)
         return vectors
 
-    def get_face_features(self, image_urls):
-        """
-
-        :param image_urls: a list of image urls
-        :return:
-        """
-        images = []
-        image_ps = []
-        len_imgs = len(image_urls)
-        if len_imgs < 1:
-            return None
-        for url in image_urls:
-            path = download_image(url, self.store_path)
-            image_ps.append(path)
-            images.append(cv2.imread(path))
-        face_vectors, face_source, locations = face2vec_for_sol_data(self.yolo, self.facenet, images, image_ps)
-        # exist_paths = [image_urls[i] for i in indices]
-        return face_vectors, face_source, locations
-
     def get_face_location_arcface(self, image_url):
         """
 
@@ -110,48 +83,24 @@ class MainHandler(tornado.web.RequestHandler):
         return self.arc_face.get_feature(vec)
 
     def get_ocr_result(self, image_path):
-        len_imgs = len(image_path)
 
         # Only calculate first image
         img = image_path[0]
 
-        img = download_image(img, self.store_path)
+        try:
+            img = download_image(img, self.store_path)
+            # CRAFT
+            rlts = inference(self.OCD, self.OCR, [img])
 
-        image = cv2.imread(img)
-
-        # EAST
-        image_list, masked_image, boxes = self.OCD.detection(image)
-
-        if image_list:
-            # cv2 to pil
-            cv2_im = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            pil_im = Image.fromarray(cv2_im)
-            img = pil_im.convert("RGB")
-
-            # ocr
-            result_list = self.OCR.recognize(img, boxes)
-
-            text_list = dict()
-            for idx, elem in enumerate(result_list):
-                text_list[idx] = elem['text']
-
-            # --
-            # # cv2 to pil, and show
-            # cv2_im = cv2.cvtColor(masked_image, cv2.COLOR_BGR2RGB)
-            # pil_im = Image.fromarray(cv2_im)
-            # pil_im.show()
-            # for idx, elem in enumerate(result_list):
-            #     print("text: %s" % elem['text'])
-            #
-            #     # cv2 to pil
-            #     cv2_im = cv2.cvtColor(image_list[idx], cv2.COLOR_BGR2RGB)
-            #     pil_im = Image.fromarray(cv2_im)
-            #     pil_im.show()
-            # --
-
-            return text_list
-        else:
-            return []
+            if rlts:
+                results = dict()
+                for i, v in enumerate(rlts):
+                    results[str(i)] = v
+                return results
+            else:
+                return []
+        except Exception as e:
+            self.log.error(e)
 
     def check_redundant(self, paths):
         new_list = list()
@@ -186,17 +135,7 @@ class MainHandler(tornado.web.RequestHandler):
         self.log.info(post_data)
 
         if task == '0':
-            # image = [image]
-            face_vectors, exist_paths, locations = self.get_face_features(paths)
-
-            if face_vectors:
-                ob = {'imgVec': face_vectors[0].tolist(), 'response': 'good'}
-                # ob2 = {'imgVec': [f.tolist() for f in face_vectors], 'response': 'good'}
-                if self.es:
-                    result = self.es.query_face_result(face_vectors[0].tolist(), target_index=self.index, top=top_k)
-                    score_result = [each_rlt for each_rlt in result if each_rlt['_score'] > score_threshold]
-                    self.write(json.dumps(score_result))
-
+            pass
         elif task == '1':
             v = self.get_images_feature(paths)
             # ################################################### search img with v[0].tolist() #####################################
@@ -216,8 +155,8 @@ class MainHandler(tornado.web.RequestHandler):
             # self.write({'result_text': text_list, 'result_image': b64})
             if text_list:
                 # force transport simple chinese to traditional chinese
-                for i, v in text_list.items():
-                    text_list[i] = cc.trans_s2t(v)
+                # for i, v in text_list.items():
+                #     text_list[i] = cc.trans_s2t(v)
                 self.write({'result_text': text_list})
             else:
                 self.write({'result_text': {}})
@@ -304,18 +243,29 @@ class MainHandler(tornado.web.RequestHandler):
             # ---------------------------------
             # OCR Result
             # ---------------------------------
-            test_rlt = {
-                '0': 'This',
-                '1': 'is',
-                '2': 'test',
-                '3': 'example',
-            }
+            # test_rlt = {
+            #     '0': 'This',
+            #     '1': 'is',
+            #     '2': 'test',
+            #     '3': 'example',
+            # }
+            # ocr_result = dict()
+            # for path in paths:
+            #
+            #     if upload_check.get(path) == 'ok':
+            #         ocr_result[path] = test_rlt
+            #     else:
+            #         ocr_result[path] = {}
+
             ocr_result = dict()
             for path in paths:
-                if upload_check.get(path) == 'ok':
-                    ocr_result[path] = test_rlt
+                text_list = self.get_ocr_result([path])
+
+                if text_list:
+                    ocr_result[path] = text_list
                 else:
                     ocr_result[path] = {}
+
             # Saving check list.
             self.checklist.update(upload_check)
             dump_json_file(os.path.join(self.config.url_checklist_path, '{0}_checklist.json'.format(self.config.index)),
@@ -326,7 +276,7 @@ class MainHandler(tornado.web.RequestHandler):
 
 def cmd_connect_es():
     try:
-        es_obj = InfinitySearchApi.InfinitySearch('hosts=10.102.9.28,10.102.9.29,10.102.9.30;port=9200;id=esadmin;passwd=esadmin@2019')
+        es_obj = InfinitySearchApi.InfinitySearch('hosts=182.0.0.71,182.0.0.73,182.0.0.75;port=9200;id=esadmin;passwd=esadmin@2018')
         status = es_obj.status()
         print(status)
         return es_obj
@@ -372,11 +322,14 @@ def log():
 
 def make_app():
     cfg = Config()
-    ocd = OCD("ocr_module/EAST/pretrained_model/east_mixed_149482/")
+    arguments = parser()
+    # ocd = OCD("ocr_module/EAST/pretrained_model/east_mixed_149482/")
+    # ocr = OCR()
+    ocd = Detection(arguments)
     ocr = OCR()
     # ner = ner_obj()
-    yolo = Detection()
-    facenet = facenet_obj()
+    # yolo = Detection()
+    # facenet = facenet_obj()
     imagenet = imagenet_obj()
     arc_face = face_model.FaceModel(cfg)
 
@@ -392,8 +345,8 @@ def make_app():
         "OCD": ocd,
         "OCR": ocr,
         # "ner": ner,
-        "yolo": yolo,
-        "facenet": facenet,
+        # "yolo": yolo,
+        # "facenet": facenet,
         "arcface": arc_face,
         "imagenet": imagenet,
         "es_obj": es,
@@ -410,9 +363,9 @@ def make_app():
 
 
 def main(configure):
-    tf_config = tf.ConfigProto()
-    tf_config.gpu_options.allow_growth = True
-    sess = tf.Session(config=tf_config)
+    # tf_config = tf.ConfigProto()
+    # tf_config.gpu_options.allow_growth = True
+    # sess = tf.Session(config=tf_config)
     # service
     serv = make_app()
 
