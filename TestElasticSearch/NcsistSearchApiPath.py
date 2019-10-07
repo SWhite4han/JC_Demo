@@ -35,15 +35,11 @@ class InfinitySearch:
         self.api_url = 'http://10.10.53.205:9527'
 
         # HTTPS/AUTH connection
-
         self.elasticsearch = es.Elasticsearch(
             self.hosts,
             http_auth=(self.id, self.password),
-            scheme="https",
+            scheme="https",  # https when using ssl. http otherwise.
             port=self.port,
-            # sniff_on_start=True,
-            # sniff_on_connection_fail=True,
-            # sniffer_timeout=60
             ca_certs=None,
             verify_certs=False,
             # --- For Test ---
