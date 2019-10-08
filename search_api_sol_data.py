@@ -12,11 +12,10 @@ from tensorflow.python.tools import inspect_checkpoint as chkp
 from logging.config import fileConfig
 
 # from nlp_module.ner.eval import ner_obj
-from nlp_module import cc
+# from nlp_module import cc
 from image_vec.img2vec import imagenet_obj
 from PIL import Image
 from Common.common_lib import download_image, img2string, string2img
-# import upload func
 from TestElasticSearch import NcsistSearchApiPath as InfinitySearchApi
 from configuration.config import Config
 from fr_module import face_model
@@ -202,7 +201,7 @@ class MainHandler(tornado.web.RequestHandler):
                 try:
                     aligned_imgs, bound_boxs, show_faces = self.get_face_location_arcface(path)
                 except Exception as e:
-                    self.log.error(e)
+                    self.log.warning(e)
                     aligned_imgs = None  # For check
                 if aligned_imgs is not None:
                     for aligned_img in aligned_imgs:
@@ -236,7 +235,7 @@ class MainHandler(tornado.web.RequestHandler):
                             upload_check[path] = 'fail'
                     except Exception as e:
                         upload_check[path] = 'fail'
-                        self.log.error(e)
+                        self.log.warning(e)
 
                 self.log.info('image ok.')
                 # ---------------------------------
@@ -258,6 +257,7 @@ class MainHandler(tornado.web.RequestHandler):
             #         ocr_result[path] = {}
 
             ocr_result = dict()
+            paths.extend(list(redundants.keys()))
             for path in paths:
                 text_list = self.get_ocr_result([path])
 
