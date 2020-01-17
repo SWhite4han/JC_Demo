@@ -17,3 +17,4 @@ TensorBoard/
 files_need_to_download
 fr_module/model_alignt_person
 fr_module/mtcnn-model
+text_recognition/*

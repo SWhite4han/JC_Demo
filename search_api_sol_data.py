@@ -131,10 +131,18 @@ class MainHandler(tornado.web.RequestHandler):
             top_k = 10
         if not score_threshold:
             score_threshold = 0.5
-        self.log.info(post_data)
+        if not feature_vec:
+            self.log.info(post_data)
 
         if task == '0':
-            pass
+            # For test fast vec query
+            v = self.get_images_feature(paths)
+            if self.es:
+                result = self.es.query_fast_vec(v[0].tolist(), target_index=self.index, top=top_k)
+                score_result = [each_rlt for each_rlt in result if each_rlt['_score'] > score_threshold]
+                self.log.info('return:{0}'.format(score_result))
+                self.log.info('len of return:{0}'.format(len(score_result)))
+                self.write(json.dumps(score_result))
         elif task == '1':
             v = self.get_images_feature(paths)
             # ################################################### search img with v[0].tolist() #####################################
@@ -148,10 +156,7 @@ class MainHandler(tornado.web.RequestHandler):
                     self.write(json.dumps(score_result))
 
         elif task == '2':
-
             text_list = self.get_ocr_result(paths)
-
-            # self.write({'result_text': text_list, 'result_image': b64})
             if text_list:
                 # force transport simple chinese to traditional chinese
                 # for i, v in text_list.items():
@@ -242,20 +247,6 @@ class MainHandler(tornado.web.RequestHandler):
             # ---------------------------------
             # OCR Result
             # ---------------------------------
-            # test_rlt = {
-            #     '0': 'This',
-            #     '1': 'is',
-            #     '2': 'test',
-            #     '3': 'example',
-            # }
-            # ocr_result = dict()
-            # for path in paths:
-            #
-            #     if upload_check.get(path) == 'ok':
-            #         ocr_result[path] = test_rlt
-            #     else:
-            #         ocr_result[path] = {}
-
             ocr_result = dict()
             paths.extend(list(redundants.keys()))
             for path in paths:
@@ -271,12 +262,13 @@ class MainHandler(tornado.web.RequestHandler):
             dump_json_file(os.path.join(self.config.url_checklist_path, '{0}_checklist.json'.format(self.config.index)),
                            self.checklist)
             self.log.info('Images are uploaded.')
+            print({"upload_check": upload_check, "ocr_result": ocr_result})
             self.write({"upload_check": upload_check, "ocr_result": ocr_result})
 
 
 def cmd_connect_es():
     try:
-        es_obj = InfinitySearchApi.InfinitySearch('hosts=182.0.0.71,182.0.0.73,182.0.0.75;port=9200;id=esadmin;passwd=esadmin@2018')
+        es_obj = InfinitySearchApi.InfinitySearch('hosts=182.0.0.103,182.0.0.104,182.0.0.105;port=9200;id=esadmin;passwd=esadmin@2019')
         status = es_obj.status()
         print(status)
         return es_obj
@@ -323,13 +315,9 @@ def log():
 def make_app():
     cfg = Config()
     arguments = parser()
-    # ocd = OCD("ocr_module/EAST/pretrained_model/east_mixed_149482/")
-    # ocr = OCR()
     ocd = Detection(arguments)
     ocr = OCR()
     # ner = ner_obj()
-    # yolo = Detection()
-    # facenet = facenet_obj()
     imagenet = imagenet_obj()
     arc_face = face_model.FaceModel(cfg)
 

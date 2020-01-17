@@ -33,7 +33,7 @@ def download_image(url, image_store_path=None):
     filename = url[url.rfind("/") + 1:]
     suffix_list = ['jpg', 'gif', 'png', 'tif', 'svg', 'pdf', 'jpeg', 'bmp', ]
 
-    r = requests.get(url, timeout=4.0)
+    r = requests.get(url, timeout=4.0, verify=False)
     if r.status_code != requests.codes.ok:
         assert False, 'Status code error: {}.'.format(r.status_code)
 

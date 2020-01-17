@@ -38,7 +38,7 @@ class InfinitySearch:
         self.elasticsearch = es.Elasticsearch(
             self.hosts,
             http_auth=(self.id, self.password),
-            scheme="https",  # https when using ssl. http otherwise.
+            scheme="http",  # https when using ssl. http otherwise.
             port=self.port,
             ca_certs=None,
             verify_certs=False,
@@ -174,17 +174,43 @@ class InfinitySearch:
     def push_data(self, data, target_index='infinity'):
         self.elasticsearch.index(index=target_index, doc_type='image_vector', body=data)
 
+    def push_b64(self, data, target_index='fast_vec'):
+        self.elasticsearch.index(index=target_index, doc_type='image_vector', body=data)
+
     def delete_all(self, target_index='infinity'):
         response = self.elasticsearch.indices.delete(index=target_index)
         return response
-        """
-        url = self.es_url + '/_all'
-        response = requests.delete(url)
-        if response.status_code == 200:
-            return response.text
+
+    def query_fast_vec(self, img_vec, top=100, cosine=True, target_index='fast_vec'):
+        if img_vec and len(img_vec) == 2048:
+            json_query = json.dumps(
+                {
+                    "query": {
+                        "function_score": {
+                            "boost_mode": "replace",
+                            "script_score": {
+                                "script": {
+                                    "source": "binary_vector_score",
+                                    "lang": "knn",
+                                    "params": {
+                                        "cosine": cosine,
+                                        "field": "img_vec",
+                                        "vector": img_vec
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "size": top
+                }
+            )
+            response = self.elasticsearch.search(index=target_index, doc_type='image_vector', body=json_query)
+
+            pprint.pprint(response)
+
+            return response['hits']['hits']
         else:
-            return 'ERROR:{0}'.format(response.status_code)
-        """
+            return None
 
     def query_result(self, json_file, target_index='infinity'):
         """

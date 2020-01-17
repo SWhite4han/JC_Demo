@@ -51,3 +51,8 @@ contains:
 7. fr_module/model_alignt_person/*
 8. fr_module/mtcnn-model/*
 -----------------------
+
+## OCR USAGE
+```
+python demo_chinese.py --Transformation TPS --FeatureExtraction ResNet --SequenceModeling BiLSTM --Prediction Attn --image_folder /home/user/Pictures/ --recog_model recognition/weights/TPS-ResNet-BiLSTM-Attn.pth --test_folder testpic
+```

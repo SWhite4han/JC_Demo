@@ -203,7 +203,7 @@ if __name__ == '__main__':
 
     # yolo = Detection()
     # facenet = facenet_obj()
-    # imagenet = imagenet_obj()
+    imagenet = imagenet_obj()
     # ner = ner_obj()
 
     # For arc face
@@ -214,6 +214,26 @@ if __name__ == '__main__':
     arc_face = face_model.FaceModel(cfg)
 
     # -------------- IMPORT OBJ ---------------
+
+    # -------------- START: OCR new version --------------
+    from text_recognition.demo_chinese import parser, inference
+    from text_recognition.detection import Detection
+    from text_recognition.ocr_module.chinese_ocr.eval import OCR
+    arguments = parser()
+
+    """ load detection and recognition net """
+    net_detection = Detection(arguments)  # initialize
+    chinese_recog = OCR()  # Chinese OCR
+
+    # from text_recognition.ocr_module.chinese_ocr.eval import OCR
+    image_list = [
+        '/home/user/PycharmProjects/Demo_site/JC_Demo/text_recognition/testpic/358.jpg',
+        # '',
+    ]
+
+    rlts = inference(net_detection, chinese_recog, image_list)
+    print(rlts)
+    # -------------- END: OCR new version --------------
 
     # -------------- START: OCR --------------
     # # image = cv2.imread(r'/mnt/data1/TCH/people_image/金正恩/000189.jpg')
@@ -248,10 +268,10 @@ if __name__ == '__main__':
     # -------------- END: OCR --------------
 
     # -------------- START: FACE + YOLO -----------
-    # ob = face2vec_for_query(yolo, facenet, [cv2.imread(r'/mnt/data1/TCH/people_image/000001.jpg')])
+    # ob = face2vec_for_query(yolo, facenet, [cv2.imread(r'/home/user/Pictures/photo.jpeg')])
     # print(ob)
     # -------------- END: FACE -------------
-    #
+
     # keys = ner.evaluate_lines_by_call(['中國商務部副部長鍾山前天證實，中美達成初步協議，近期內將不會調高人民幣匯率。'])
     # print(keys)
     # keys = ner.evaluate_lines_by_call(['乒乓球擂台赛首场半决赛战罢刘国梁王晨取得决赛权(附图片1张)本报浙江余姚1月24日电爱立信中国乒乓球擂台赛今天'])
@@ -260,9 +280,9 @@ if __name__ == '__main__':
     # print(keys)
 
     # -------------- START: IMAGE -----------
-    # _, v = imagenet.img_vec(
-    #     [r'/mnt/data1/TCH/people_image/金正恩/000098.jpg'])
-    # print(v)
+    _, v = imagenet.img_vec(
+        [r'/home/user/Pictures/photo.jpeg'])
+    print(v)
     # -------------- END: IMAGE -------------
 
     # -------------- TensorBoard ------------
