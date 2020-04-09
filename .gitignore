@@ -1,20 +1,23 @@
-.idea
+.idea*
 *__pycache__*/
-# /home/c11tch/workspace/PycharmProjects/JC_Demo/
 text_recognition/ocr_module/chinese_ocr/models/*
 text_recognition/result/*
-text_recognition/venv
-text_recognition/weights/*.pth
+text_recognition/testpic/*
 face_module/pre_train_models/*
 face_module/sir_db/
 face_module/run/
 image_vec/pretrained/*
-# image_vec/data/
 nlp_module/ner/example/
 obj_dectect_module/*.h5
-venv/
+venv*
 TensorBoard/
 files_need_to_download
 fr_module/model_alignt_person
 fr_module/mtcnn-model
-text_recognition/*
+*.pyc
+*.swp
+*.pkl
+*.pth
+*.pb
+result*
+weights*
